@@ -29,6 +29,9 @@ func init() {
 	r.HandleFunc(baseURL+"/containers/{id}/logs", handleContainerLogs).Methods("GET")
 	r.HandleFunc(baseURL+"/containers/{id}/kill", handleContainerKill).Methods("POST")
 	r.HandleFunc(baseURL+"/images/create", handleImagePull).Methods("POST")
+	// this is used to test timeout functionality
+	r.HandleFunc(baseURL+"/hangFor", handleHang).Methods("POST")
+
 	testHTTPServer = httptest.NewServer(handlerAccessLog(r))
 }
 
@@ -207,4 +210,18 @@ func handlerGetContainers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Write([]byte(body))
+}
+
+func handleHang(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+	numSecondsString := r.FormValue("numSeconds")
+	numSeconds, err := strconv.Atoi(numSecondsString)
+	if err != nil {
+		panic(err)
+	}
+
+	time.Sleep(time.Duration(numSeconds) * time.Second)
+	fmt.Printf("done sleeping! %d", numSeconds)
 }

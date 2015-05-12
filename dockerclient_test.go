@@ -3,9 +3,11 @@ package dockerclient
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/pkg/stdcopy"
 )
@@ -26,6 +28,22 @@ func testDockerClient(t *testing.T) *DockerClient {
 		t.Fatal("Cannot init the docker client")
 	}
 	return client
+}
+
+func TestDockerClientTimeout(t *testing.T) {
+	client, err := NewDockerClientTimeout(testHTTPServer.URL, nil, 3*time.Second)
+	if err != nil {
+		t.Fatal("Cannot init the docker client")
+	}
+	hangingURL := fmt.Sprintf("%s/%s/hangFor", testHTTPServer.URL, APIVersion)
+	_, err = client.HTTPClient.PostForm(hangingURL, url.Values{"numSeconds": {"4"}})
+	if err == nil {
+		t.Fatal("Expected failure from POST request")
+	}
+	_, err = client.HTTPClient.PostForm(hangingURL, url.Values{"numSeconds": {"1"}})
+	if err != nil {
+		t.Fatalf("Got error from POST request: %q", err)
+	}
 }
 
 func TestInfo(t *testing.T) {
